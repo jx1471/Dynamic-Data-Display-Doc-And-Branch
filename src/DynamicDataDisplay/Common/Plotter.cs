@@ -34,7 +34,8 @@ namespace Microsoft.Research.DynamicDataDisplay
 	[TemplatePart(Name = "PART_MainGrid", Type = typeof(Grid))]
 	[TemplatePart(Name = "PART_ContentsGrid", Type = typeof(Grid))]
 	[TemplatePart(Name = "PART_ParallelCanvas", Type = typeof(Canvas))]
-	//ContentControl must be a standard WPF class
+	
+	//ContentControl is a standard WPF class
 	public abstract class Plotter : ContentControl
 	{
 		/// <summary>
@@ -61,7 +62,8 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		protected override bool ShouldSerializeProperty(DependencyProperty dp)
 		{
-			// do not serialize context menu if it was created by DefaultContextMenu, because that context menu items contains references of plotter
+			// do not serialize context menu if it was created by DefaultContextMenu, 
+			// because that context menu items contains references of plotter
 			if (dp == ContextMenuProperty && children.Any(el => el is DefaultContextMenu)) return false;
 			if (dp == TemplateProperty) return false;
 			if (dp == ContentProperty) return false;
@@ -93,7 +95,7 @@ namespace Microsoft.Research.DynamicDataDisplay
 			//Apply template
 			ApplyTemplate();
 		}
-
+		
 		private void Plotter_Loaded(object sender, RoutedEventArgs e)
 		{
 			// this is done to enable keyboard shortcuts
@@ -107,12 +109,15 @@ namespace Microsoft.Research.DynamicDataDisplay
 		//TODO: Research NotifyGrid (part of NotifyingPanels)
 		private NotifyingGrid contentsGrid;
 		
-		//Override the OnApplyTemplate to configure the Header, Footer, Grid, and Viewport
 		public override void OnApplyTemplate()
 		{
+		//<function summary>
+		//Override OnApplyTemplate to configure the Header, Footer, Grid, and Viewport
+		//</function summary>
 			//Call base classes OnApplyTemplate function
 			base.OnApplyTemplate();
-
+			
+			//Assign template parts to variables
 			headerPanel = GetPart<NotifyingStackPanel>("PART_HeaderPanel");
 			footerPanel = GetPart<NotifyingStackPanel>("PART_FooterPanel");
 
@@ -128,8 +133,12 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 			contentsGrid = GetPart<NotifyingGrid>("PART_ContentsGrid");
 			Content = contentsGrid;
+			
+			//Add contentGrid to the ContentControl
 			AddLogicalChild(contentsGrid);
-
+			
+			//Set each panel Item (template part) to trigger notifyingItem_ChildrenCreated handler
+			//If NotifyingChildren already set, set the CollectionChanged handler to OnVisualCollectionChanged
 			foreach (var notifyingItem in GetAllPanels())
 			{
 				if (notifyingItem.NotifyingChildren == null)
@@ -145,13 +154,19 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private void notifyingItem_ChildrenCreated(object sender, EventArgs e)
 		{
+		//<function summary>
+		
+		//</function summary>
 			INotifyingPanel panel = (INotifyingPanel)sender;
-
+			
 			SubscribePanelEvents(panel);
 		}
 
 		private void SubscribePanelEvents(INotifyingPanel panel)
 		{
+		//<function summary>
+		//Set ChildrenCreated handler and update CollectionChanged Handler
+		//</function summary>
 			panel.ChildrenCreated -= notifyingItem_ChildrenCreated;
 
 			panel.NotifyingChildren.CollectionChanged -= OnVisualCollectionChanged;
@@ -160,6 +175,11 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private void OnVisualCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
+		//<function summary>
+		// If there are new items in the collection then update the CollectionChanged handler
+		// Call the OnVisualChildAdded handler with the UIElement related to each new item
+		// Remove handlers from all the old items
+		//</function summary>
 			if (e.NewItems != null)
 			{
 				foreach (var item in e.NewItems)
@@ -208,6 +228,9 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		protected virtual void OnVisualChildAdded(UIElement target, UIElementCollection uIElementCollection)
 		{
+		//<function summary>
+		//
+		//</function summary>
 			IPlotterElement element = null;
 			if (addingElements.Count > 0)
 			{
@@ -217,6 +240,8 @@ namespace Microsoft.Research.DynamicDataDisplay
 				var proxy = dict[element];
 
 				List<UIElement> visualElements;
+				// If visual element doesn't already exist add the element to the collection
+				// else find the element and add the target UI element.
 				if (!addedVisualElements.ContainsKey(element))
 				{
 					visualElements = new List<UIElement>();
