@@ -12,6 +12,7 @@ namespace Microsoft.Research.DynamicDataDisplay.Common
 		#region INotifyingPanel Members
 
 		private NotifyingUIElementCollection notifyingChildren;
+		//Accessor Method for the Collection notifyingChildren
 		public NotifyingUIElementCollection NotifyingChildren
 		{
 			get { return notifyingChildren; }
@@ -19,12 +20,17 @@ namespace Microsoft.Research.DynamicDataDisplay.Common
 
 		protected override UIElementCollection CreateUIElementCollection(FrameworkElement logicalParent)
 		{
+		//<function summary>
+		// Override the CreateUIElementCollection method
+		// Assign notifyingChildren to the Collection associated with the logicalParent
+		// Raise the event handler ChildrenCreated
+		//</function summary>
 			notifyingChildren = new NotifyingUIElementCollection(this, logicalParent);
 			ChildrenCreated.Raise(this);
 
 			return notifyingChildren;
 		}
-
+		//Event handler triggered when children are created.
 		public event EventHandler ChildrenCreated;
 
 		#endregion
