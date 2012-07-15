@@ -229,13 +229,15 @@ namespace Microsoft.Research.DynamicDataDisplay
 		protected virtual void OnVisualChildAdded(UIElement target, UIElementCollection uIElementCollection)
 		{
 		//<function summary>
-		//
+		// Add the target to the visual elements dictionary.
 		//</function summary>
 			IPlotterElement element = null;
 			if (addingElements.Count > 0)
 			{
+				// Get the element being added
 				element = addingElements.Peek();
-
+				
+				// reference element in the visualBindingCollection 
 				var dict = visualBindingCollection.Cache;
 				var proxy = dict[element];
 
@@ -253,13 +255,16 @@ namespace Microsoft.Research.DynamicDataDisplay
 				}
 
 				visualElements.Add(target);
-
+				// Bind the proxy with the target.
 				SetBindings(proxy, target);
 			}
 		}
-
+		
 		private void SetBindings(UIElement proxy, UIElement target)
 		{
+		//<function summary>
+		// Bind the proxy with the target.
+		//</function summary>
 			if (proxy != target)
 			{
 				foreach (var property in GetPropertiesToSetBindingOn())
@@ -271,6 +276,9 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private void RemoveBindings(UIElement proxy, UIElement target)
 		{
+		//<function summary>
+		// Unbind the proxy from the target.
+		//</function summary>
 			if (proxy != target)
 			{
 				foreach (var property in GetPropertiesToSetBindingOn())
@@ -279,7 +287,7 @@ namespace Microsoft.Research.DynamicDataDisplay
 				}
 			}
 		}
-
+		
 		private IEnumerable<DependencyProperty> GetPropertiesToSetBindingOn()
 		{
 			yield return UIElement.OpacityProperty;
@@ -289,14 +297,20 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		protected virtual void OnVisualChildRemoved(UIElement target, UIElementCollection uiElementCollection)
 		{
+		//<function summary>
+		// Add the target to the visual elements dictionary.
+		//</function summary>
 			IPlotterElement element = null;
 			if (removingElements.Count > 0)
 			{
+				// Get the element being added
 				element = removingElements.Peek();
-
+	
+				// reference element in the visualBindingCollection
 				var dict = visualBindingCollection.Cache;
 				var proxy = dict[element];
-
+				
+				// If visual element exists, remove the element from the collection
 				if (addedVisualElements.ContainsKey(element))
 				{
 					var list = addedVisualElements[element];
@@ -307,7 +321,7 @@ namespace Microsoft.Research.DynamicDataDisplay
 						dict.Remove(element);
 					}
 				}
-
+				//Unbind the proxy from the target
 				RemoveBindings(proxy, target);
 			}
 		}
@@ -331,6 +345,9 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private T GetPart<T>(string name)
 		{
+		//<function summary>
+		// Return the template of the specified name.
+		//</function summary>
 			return (T)Template.FindName(name, this);
 		}
 
@@ -350,6 +367,9 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private void OnChildrenCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
+		//<function summary>
+		// Add new children, remove old children
+		//</function summary>
 			if (e.NewItems != null)
 			{
 				foreach (IPlotterElement item in e.NewItems)
@@ -369,21 +389,29 @@ namespace Microsoft.Research.DynamicDataDisplay
 		private readonly Stack<IPlotterElement> addingElements = new Stack<IPlotterElement>();
 		protected virtual void OnChildAdded(IPlotterElement child)
 		{
+		//<function summary>
+		// Perform the the following actions when a child is added.
+		//</function summary>
+		
+			// If a child is not null add the child.
 			if (child != null)
 			{
 				addingElements.Push(child);
+				// 1 - Test to see if the child is apart of another parent plotter
+				// 2 - if not, assign it to the current parent and check to make sure it was assigned.
+				// 3 - If an exception occurs, remove the child.
 				try
 				{
 					UIElement visualProxy = CreateVisualProxy(child);
 					visualBindingCollection.Cache.Add(child, visualProxy);
-
+					//1
 					if (child.Plotter != null)
 					{
 						throw new InvalidOperationException(Properties.Resources.PlotterElementAddedToAnotherPlotter);
 					}
-
+					//2
 					child.OnPlotterAttached(this);
-
+					//3
 					if (child.Plotter != this)
 					{
 						throw new InvalidOperationException(Properties.Resources.InvalidParentPlotterValue);
@@ -398,6 +426,9 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private UIElement CreateVisualProxy(IPlotterElement child)
 		{
+		//<function summary>
+		// Return the UIElement of the child PlotterElement
+		//</function summary>
 			if (visualBindingCollection.Cache.ContainsKey(child))
 				throw new InvalidOperationException(Properties.Resources.VisualBindingsWrongState);
 
@@ -414,30 +445,40 @@ namespace Microsoft.Research.DynamicDataDisplay
 		private readonly Stack<IPlotterElement> removingElements = new Stack<IPlotterElement>();
 		protected virtual void OnChildRemoving(IPlotterElement child)
 		{
+		//<function summary>
+		// Perform the the following actions when a child is added.
+		//</function summary>
 			if (child != null)
 			{
+				// If a child is not null add the child to removingElements.
 				removingElements.Push(child);
+				// 1 - Test to see if the child is apart of the current plotter (this)
+				// 2 - if not, detach it from the current parent and check to make sure it was detached.
+				// 3 - Remove the child from the visualBindingCollection and check to make sure it was removed.
+				// 4 - If an exception occurs, eliminate child from removal.
 				try
 				{
+					//1
 					if (child.Plotter != this)
 					{
 						throw new InvalidOperationException(Properties.Resources.InvalidParentPlotterValueRemoving);
 					}
-
+					//2
 					child.OnPlotterDetaching(this);
-
+					
 					if (child.Plotter != null)
 					{
 						throw new InvalidOperationException(Properties.Resources.ParentPlotterNotNull);
 					}
-
+					//3
 					visualBindingCollection.Cache.Remove(child);
-
+					
 					if (addedVisualElements.ContainsKey(child) && addedVisualElements[child].Count > 0)
 					{
 						throw new InvalidOperationException(String.Format(Properties.Resources.PlotterElementDidnotCleanedAfterItself, child.ToString()));
 					}
 				}
+				//4
 				finally
 				{
 					removingElements.Pop();
@@ -527,7 +568,11 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		public BitmapSource CreateScreenshot()
 		{
-
+		//<function summary>
+		// Creates a screenshot using the ScreenshotHelper
+		// A rectangle is calculated above the entire plot region
+		// and given to the ScreenshotHelper in order to create a screenshot
+		//</function summary>
 			UIElement parent = (UIElement)Parent;
 
 			Rect renderBounds = new Rect(RenderSize);
@@ -546,27 +591,26 @@ namespace Microsoft.Research.DynamicDataDisplay
 			return ScreenshotHelper.CreateScreenshot(this, rect);
 		}
 
-
-		/// <summary>Saves screenshot to file.</summary>
-		/// <param name="filePath">File path.</param>
 		public void SaveScreenshot(string filePath)
 		{
+		/// <summary>Saves screenshot to file.</summary>
+		/// <param name="filePath">File path.</param>
 			ScreenshotHelper.SaveBitmapToFile(CreateScreenshot(), filePath);
 		}
 
+		public void SaveScreenshotToStream(Stream stream, string fileExtension)
+		{
 		/// <summary>
 		/// Saves screenshot to stream.
 		/// </summary>
 		/// <param name="stream">The stream.</param>
 		/// <param name="fileExtension">The file type extension.</param>
-		public void SaveScreenshotToStream(Stream stream, string fileExtension)
-		{
 			ScreenshotHelper.SaveBitmapToStream(CreateScreenshot(), stream, fileExtension);
 		}
 
-		/// <summary>Copies the screenshot to clipboard.</summary>
 		public void CopyScreenshotToClipboard()
 		{
+		/// <summary>Copies the screenshot to clipboard.</summary>
 			Clipboard.Clear();
 			Clipboard.SetImage(CreateScreenshot());
 		}
@@ -576,23 +620,26 @@ namespace Microsoft.Research.DynamicDataDisplay
 		#region IsDefaultElement attached property
 
 		protected void SetAllChildrenAsDefault()
-		{
+		{	
 			foreach (var child in Children.OfType<DependencyObject>())
 			{
 				child.SetValue(IsDefaultElementProperty, true);
 			}
 		}
 
-		/// <summary>Gets a value whether specified graphics object is default to this plotter or not</summary>
-		/// <param name="obj">Graphics object to check</param>
-		/// <returns>True if it is default or false otherwise</returns>
 		public static bool GetIsDefaultElement(DependencyObject obj)
 		{
+		/// <summary>Gets a value whether specified graphics object is default to this plotter or not</summary>
+		/// <param name="obj">Graphics object to check</param>
+		/// <returns>True if it is default or false otherwise</returns>	
 			return (bool)obj.GetValue(IsDefaultElementProperty);
 		}
 
 		public static void SetIsDefaultElement(DependencyObject obj, bool value)
 		{
+		//<function summary>
+		// Set the specified graphics element as default
+		//</function summary>
 			obj.SetValue(IsDefaultElementProperty, value);
 		}
 
@@ -602,10 +649,10 @@ namespace Microsoft.Research.DynamicDataDisplay
 			typeof(Plotter),
 			new UIPropertyMetadata(false));
 
-		/// <summary>Removes all user graphs from given UIElementCollection, 
-		/// leaving only default graphs</summary>
 		protected static void RemoveUserElements(IList<IPlotterElement> elements)
 		{
+		/// <summary>Removes all user graphs from given UIElementCollection, 
+		/// leaving only default graphs</summary>
 			int index = 0;
 
 			while (index < elements.Count)
@@ -633,11 +680,17 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		public static bool GetIsDefaultAxis(DependencyObject obj)
 		{
+		//<function summary>
+		// Determine if the plotter is using the default axis
+		//</function summary>
 			return (bool)obj.GetValue(IsDefaultAxisProperty);
 		}
 
 		public static void SetIsDefaultAxis(DependencyObject obj, bool value)
 		{
+		//<function summary>
+		// Set the default plotter axis
+		//</function summary>
 			obj.SetValue(IsDefaultAxisProperty, value);
 		}
 
@@ -649,6 +702,10 @@ namespace Microsoft.Research.DynamicDataDisplay
 
 		private static void OnIsDefaultAxisChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
 		{
+		//<function summary>
+		// Perform the following when the default axis changes
+		//</function summary>
+			
 			Plotter parentPlotter = null;
 			IPlotterElement plotterElement = d as IPlotterElement;
 			if (plotterElement != null)
